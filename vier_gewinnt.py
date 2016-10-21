@@ -124,24 +124,23 @@ class Game(object):
     def on_motion(self, event):
         current_percent_right = \
             float(event.x-self.field_space) / (self.columns * self.field_space + 2 * self.columns * self.field_radius)
-        column = int(current_percent_right * self.columns)
-        print('column: {}'.format(column))
+        current_column = int(current_percent_right * self.columns)
         if self.hovered is not None:
-            if self.hovered.column == column:
+            if self.hovered.column == current_column:
                 return
             self.hovered.reset()
-        for field in self.board[column]:
+        for field in self.board[current_column]:
             if field.status == FieldStatus.FREE:
                 field.hover(self.active_player)
                 self.hovered = field
                 return
-            self.hovered = None
+        self.hovered = None
 
     def on_click(self, event):
         if self.hovered is not None:
-            self.hovered.occupy(self.active_player)
-            self.active_player = self.active_player.next_player
-            # TODO: Turn
+            self.hovered.claim(self.active_player)
+            if not self.is_end():
+                self.active_player = self.active_player.next_player
             self.hovered = None
 
     def on_leave(self, event):
@@ -150,6 +149,26 @@ class Game(object):
             self.hovered = None
         self.canvas.unbind('<Motion>')
         self.canvas.unbind('<Button-1>')
+
+    def is_end(self):
+        winner = None
+        claimed = self.hovered
+        claimed_row = claimed.row
+        claimed_column = claimed.column
+        # TODO: Win Detection
+        for column in self.board:
+            last_item = column[-1]
+            if last_item.status == FieldStatus.FREE:
+                return False
+        self.end_game(winner)
+
+    def end_game(self, winner):
+        self.reset_board()
+
+    def reset_board(self):
+        for column in self.board:
+            for field in column:
+                field.reset()
 
 
 class Field(object):
@@ -163,6 +182,7 @@ class Field(object):
         self.row = row
         self.outer_circle_id = None
         self.inner_circle_id = None
+        self.claimed_by = None
 
     def create_gui_element(self):
         self.outer_circle_id = self.canvas.create_circle(self.x_pos, self.y_pos, self.radius, fill=Color.WHITE.value,
@@ -170,10 +190,11 @@ class Field(object):
         self.inner_circle_id = self.canvas.create_circle(self.x_pos, self.y_pos, self.radius - 10,
                                                          fill=Color.WHITE.value)
 
-    def occupy(self, player: Player):
+    def claim(self, player: Player):
         self.canvas.itemconfigure(self.outer_circle_id, fill=player.color_outer)
         self.canvas.itemconfigure(self.inner_circle_id, fill=player.color_inner)
         self.status = FieldStatus.OCCUPIED
+        self.claimed_by = player
 
     def hover(self, player: Player):
         self.canvas.itemconfigure(self.outer_circle_id, fill=player.color_hovered_outer)
@@ -183,6 +204,7 @@ class Field(object):
         self.canvas.itemconfigure(self.outer_circle_id, fill=Color.WHITE.value, outline=Color.OUTLINE.value, width=2)
         self.canvas.itemconfigure(self.inner_circle_id, fill=Color.WHITE.value)
         self.status = FieldStatus.FREE
+        self.claimed_by = None
 
     def outline(self):
         self.canvas.itemconfigure(self.outer_circle_id, outline=Color.HIGHLIGHT.value, width=5)
@@ -195,7 +217,6 @@ class FieldStatus(Enum):
 
 def _create_circle(self, x, y, r, **kwargs):
     return self.create_oval(x - r, y - r, x + r, y + r, **kwargs)
-
 
 Canvas.create_circle = _create_circle
 
