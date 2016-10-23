@@ -16,8 +16,8 @@ class Color(Enum):
     PLAYER_1_HOVERED_INNER = '#3B0B0B'
     PLAYER_2_HOVERED_OUTER = '#886A08'
     PLAYER_2_HOVERED_INNER = '#5F4C0B'
-    FONT_COLOR_WINNER = '#B40404'
-    FONT_COLOR_WINS = '#FFFFFF'
+    FONT_COLOR_WINNER = '#151515'
+    FONT_COLOR_WINS = '#1C1C1C'
 
 
 class PlayerType(Enum):
@@ -99,10 +99,10 @@ class Game(object):
         half_width = int(self.canvas_width/2)
         one_quarter_height = int(self.canvas_height/6)
         self.canvas_text_winner_id = self.canvas.create_text(half_width, one_quarter_height*2,
-                                                             font='Helvetica 36 bold',
+                                                             font='Helvetica 42 bold',
                                                              fill=Color.FONT_COLOR_WINNER.value)
         self.canvas_text_wins_id = self.canvas.create_text(half_width, one_quarter_height*3,
-                                                           font='Helvetica 20 bold', fill=Color.FONT_COLOR_WINS.value)
+                                                           font='Helvetica 35 bold', fill=Color.FONT_COLOR_WINS.value)
 
     def create_canvas(self, master):
         self.canvas = Canvas(master=master, bg=Color.BOARD.value, highlightthickness=0)
