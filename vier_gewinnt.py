@@ -53,7 +53,7 @@ class Player(object):
 
 
 class Game(object):
-    def __init__(self, columns=2, rows=2, field_radius=100, field_space=50):
+    def __init__(self, columns=7, rows=6, field_radius=50, field_space=10):
         self.columns = columns
         self.rows = rows
         self.board = None
@@ -99,10 +99,10 @@ class Game(object):
         half_width = int(self.canvas_width/2)
         one_quarter_height = int(self.canvas_height/6)
         self.canvas_text_winner_id = self.canvas.create_text(half_width, one_quarter_height*2,
-                                                             font='Helvetica 20 bold',
+                                                             font='Helvetica 36 bold',
                                                              fill=Color.FONT_COLOR_WINNER.value)
         self.canvas_text_wins_id = self.canvas.create_text(half_width, one_quarter_height*3,
-                                                           font='Helvetica 16 bold', fill=Color.FONT_COLOR_WINS.value)
+                                                           font='Helvetica 20 bold', fill=Color.FONT_COLOR_WINS.value)
 
     def create_canvas(self, master):
         self.canvas = Canvas(master=master, bg=Color.BOARD.value, highlightthickness=0)
@@ -148,21 +148,43 @@ class Game(object):
         winner = None
         claimed = self.hovered
 
-        directions = [[0, 1], [1, 0], [1, 1]]
+        directions = [[0, 1], [1, 0], [1, 1], [-1, 1]]
         for direction in directions:
             streak = self.get_occupied_streak(claimed, direction[0], direction[1])
+            if len(streak) > 3:
+                for field in streak:
+                    field.outline()
+                self.end_game(self.active_player)
+                return True
 
         for column in self.board: #detect if board is full without anyone winning
             last_item = column[-1]
             if last_item.status == FieldStatus.FREE:
-                return
+                return False
         self.end_game(winner)
+        return True
 
     def get_occupied_streak(self, field, add_x, add_y):
-        return []
+        streak_active = True
+        direction = 1
+        x = field.column
+        y = field.row
+        streak = [field]
+        while streak_active:
+            x += (add_x * direction)
+            y += (add_y * direction)
+            if 0 <= x < self.columns and 0 <= y < self.rows and self.board[x][y].status == FieldStatus.OCCUPIED and self.board[x][y].claimed_by == field.claimed_by:
+                streak.append(self.board[x][y])
+            else:
+                if direction > 0:
+                    direction = -1
+                    x = field.column
+                    y = field.row
+                else:
+                    streak_active = False
+        return streak
 
     def end_game(self, winner):
-        winner = self.player1
         self.after_win_events()
         if winner is not None:
             text = '{} WINS'.format(winner.player_type.value)
@@ -176,6 +198,11 @@ class Game(object):
         for column in self.board:
             for field in column:
                 field.reset()
+
+    def reset_soft(self):
+        for column in self.board:
+            for field in column:
+                field.reset_outline()
 
 
 class Field(object):
@@ -215,6 +242,9 @@ class Field(object):
 
     def outline(self):
         self.canvas.itemconfigure(self.outer_circle_id, outline=Color.HIGHLIGHT.value, width=5)
+
+    def reset_outline(self):
+        self.canvas.itemconfigure(self.outer_circle_id, outline=Color.OUTLINE.value, width=2)
 
 
 def _create_circle(self, x, y, r, **kwargs):
