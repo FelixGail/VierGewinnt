@@ -1,4 +1,4 @@
-from tkinter import Tk, Canvas
+from tkinter import Tk, Canvas, Entry, Label, Button
 from enum import Enum
 
 
@@ -53,9 +53,10 @@ class Player(object):
 
 
 class Game(object):
-    def __init__(self, columns=7, rows=6, field_radius=50, field_space=10):
+    def __init__(self, columns=7, rows=6, field_radius=50, field_space=10, win_condition=4):
         self.columns = columns
         self.rows = rows
+        self.win_condition = win_condition
         self.board = None
         self.canvas = None
         self.hovered = None
@@ -151,7 +152,7 @@ class Game(object):
         directions = [[0, 1], [1, 0], [1, 1], [-1, 1]]
         for direction in directions:
             streak = self.get_occupied_streak(claimed, direction[0], direction[1])
-            if len(streak) > 3:
+            if len(streak) >= self.win_condition:
                 for field in streak:
                     field.outline()
                 self.end_game(self.active_player)
@@ -247,10 +248,83 @@ class Field(object):
         self.canvas.itemconfigure(self.outer_circle_id, outline=Color.OUTLINE.value, width=2)
 
 
+class GameSettings(object):
+    def __init__(self):
+        self.columns = 7
+        self.rows = 6
+        self.field_radius = 50
+        self.space = 10
+        self.win_condition = 4
+        self.win_condition_entry = None
+        self.columns_entry = None
+        self.rows_entry = None
+        self.field_radius_entry = None
+        self.space_entry = None
+        self.tk = None
+        self.height = 20
+
+    def create_window(self):
+        self.tk = Tk()
+        self.tk.geometry('310x210')
+        self.tk.title('Settings')
+
+        self.create_label(0, 'Columns:')
+        self.columns_entry = self.create_entry(0, self.columns)
+
+        self.create_label(1, 'Columns')
+        self.rows_entry = self.create_entry(1, self.rows)
+
+        self.create_label(2, 'Field Radius:')
+        self.field_radius_entry = self.create_entry(2, self.field_radius)
+
+        self.create_label(3, 'Space:')
+        self.space_entry = self.create_entry(3, self.space)
+
+        self.create_label(4, 'Win Condition:')
+        self.win_condition_entry = self.create_entry(4, self.win_condition)
+
+        button = Button(master=self.tk, text='Start', command=self.button_click)
+        self.place(button, 80, 170)
+
+        self.tk.mainloop()
+
+    def button_click(self):
+        try:
+            self.columns = int(self.columns_entry.get())
+            self.rows = int(self.rows_entry.get())
+            self.field_radius = int(self.field_radius_entry.get())
+            self.space = int(self.space_entry.get())
+            self.win_condition = int(self.win_condition_entry.get())
+        except ValueError:
+            raise
+        finally:
+            self.tk.destroy()
+
+    def place(self, widget, x, y):
+        widget.place(x=x, y=y, width=140, height=40)
+
+    def create_entry(self, pos, text):
+        entry = Entry(master=self.tk)
+        entry.insert(0, str(text))
+        self.place(entry, 160, pos*30+10)
+        return entry
+
+    def create_label(self, pos, text):
+        label = Label(master=self.tk, text=str(text))
+        self.place(label, 10, pos*30+10)
+        return label
+
+
 def _create_circle(self, x, y, r, **kwargs):
     return self.create_oval(x - r, y - r, x + r, y + r, **kwargs)
 
 Canvas.create_circle = _create_circle
 
-if __name__ == '__main__':
-    game = Game()
+settings = GameSettings()
+try:
+    settings.create_window()
+    Game(columns=settings.columns, rows=settings.rows, field_radius=settings.field_radius,
+         field_space=settings.space, win_condition=settings.win_condition)
+except ValueError:
+    Game()
+
