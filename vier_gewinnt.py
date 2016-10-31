@@ -69,11 +69,9 @@ class Game(object):
         self.active_player = self.player1
         self.field_radius = field_radius
         self.field_space = field_space
-        self.canvas_width = (self.columns + 1) * self.field_space + 2 * self.columns * self.field_radius
-        self.canvas_height = (self.rows + 1) * self.field_space + 2 * self.rows * self.field_radius
-        tk = Tk()
-        tk.geometry('{}x{}'.format(self.canvas_width, self.canvas_height))
-        tk.title('4 Gewinnt')
+        self.window_width = (self.columns + 1) * self.field_space + 2 * self.columns * self.field_radius
+        self.window_height = (self.rows + 1) * self.field_space + 2 * self.rows * self.field_radius
+        tk = open_centered_window(self.window_width, self.window_height, '4 Gewinnt')
         self.initiate_board(tk)
         self.initiate_win_labels()
         self.bind_events()
@@ -86,7 +84,7 @@ class Game(object):
         add = 2 * self.field_radius + self.field_space
         x_pos = start
         for column in range(self.columns):
-            y_pos = self.canvas_height - start
+            y_pos = self.window_height - start
             inner = []
             for row in range(self.rows):
                 field_object = Field(x_pos, y_pos, self.field_radius, self.canvas, column, row)
@@ -97,8 +95,8 @@ class Game(object):
             x_pos += add
 
     def initiate_win_labels(self):
-        half_width = int(self.canvas_width/2)
-        one_quarter_height = int(self.canvas_height/6)
+        half_width = int(self.window_width / 2)
+        one_quarter_height = int(self.window_height / 6)
         self.canvas_text_winner_id = self.canvas.create_text(half_width, one_quarter_height*2,
                                                              font='Helvetica 42 bold',
                                                              fill=Color.FONT_COLOR_WINNER.value)
@@ -107,7 +105,7 @@ class Game(object):
 
     def create_canvas(self, master):
         self.canvas = Canvas(master=master, bg=Color.BOARD.value, highlightthickness=0)
-        self.canvas.place(x=0, y=0, width=self.canvas_width, height=self.canvas_height)
+        self.canvas.place(x=0, y=0, width=self.window_width, height=self.window_height)
 
     def bind_events(self):
         self.canvas.bind('<Button-1>', self.on_click)
@@ -264,9 +262,7 @@ class GameSettings(object):
         self.height = 20
 
     def create_window(self):
-        self.tk = Tk()
-        self.tk.geometry('310x210')
-        self.tk.title('Settings')
+        self.tk = open_centered_window(310, 210, 'Settings')
 
         self.create_label(0, 'Columns:')
         self.columns_entry = self.create_entry(0, self.columns)
@@ -317,8 +313,21 @@ class GameSettings(object):
 
 def _create_circle(self, x, y, r, **kwargs):
     return self.create_oval(x - r, y - r, x + r, y + r, **kwargs)
-
 Canvas.create_circle = _create_circle
+
+
+def open_centered_window(width, height, title):
+    tk = Tk()
+
+    screen_width = tk.winfo_screenwidth()
+    screen_height = tk.winfo_screenheight()
+
+    x = int((screen_width - width) / 2)
+    y = int((screen_height - height) / 2)
+
+    tk.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+    tk.title(title)
+    return tk
 
 settings = GameSettings()
 try:
