@@ -20,16 +20,19 @@ class Color(Enum):
     FONT_COLOR_WINS = '#1C1C1C'
 
 
+# player names
 class PlayerType(Enum):
     PLAYER_1 = 'RED'
     PLAYER_2 = 'YELLOW'
 
 
+# possible field states
 class FieldStatus(Enum):
     FREE = 0
     OCCUPIED = 1
 
 
+# player object will determine which colors to use and keeps track of won games
 class Player(object):
     def __init__(self, player: PlayerType):
         self.points = 0
@@ -52,6 +55,7 @@ class Player(object):
         self.points += 1
 
 
+# Main class
 class Game(object):
     def __init__(self, columns=7, rows=6, field_radius=50, field_space=10, win_condition=4):
         self.columns = columns
@@ -77,6 +81,7 @@ class Game(object):
         self.bind_events()
         tk.mainloop()
 
+    # create game fields and add them to the board array
     def initiate_board(self, master):
         self.create_canvas(master)
         self.board = []
@@ -94,6 +99,7 @@ class Game(object):
             self.board.append(inner)
             x_pos += add
 
+    # create the end game message labels
     def initiate_win_labels(self):
         half_width = int(self.window_width / 2)
         one_quarter_height = int(self.window_height / 6)
@@ -103,24 +109,29 @@ class Game(object):
         self.canvas_text_wins_id = self.canvas.create_text(half_width, one_quarter_height*3,
                                                            font='Helvetica 35 bold', fill=Color.FONT_COLOR_WINS.value)
 
+    # create a canvas to draw the field objects in
     def create_canvas(self, master):
         self.canvas = Canvas(master=master, bg=Color.BOARD.value, highlightthickness=0)
         self.canvas.place(x=0, y=0, width=self.window_width, height=self.window_height)
 
+    # bind the default events
     def bind_events(self):
         self.canvas.bind('<Button-1>', self.on_click)
         self.canvas.bind('<Motion>', self.on_motion)
 
+    # Remove the default binds. Mouse click will reset the game now
     def after_win_events(self):
-        self.canvas.bind('<Button-1>', self.reset_binds)
+        self.canvas.bind('<Button-1>', self.reset_game)
         self.canvas.unbind('<Motion>')
 
-    def reset_binds(self, event):
+    # remove the end game message, reset the board and bind the default events
+    def reset_game(self, event):
         self.canvas.itemconfigure(self.canvas_text_wins_id, text='')
         self.canvas.itemconfigure(self.canvas_text_winner_id, text='')
         self.reset_board()
         self.bind_events()
 
+    # What to do on mouse motion
     def on_motion(self, event):
         current_percent_right = \
             float(event.x-self.field_space) / (self.columns * self.field_space + 2 * self.columns * self.field_radius)
@@ -136,6 +147,7 @@ class Game(object):
                 return
         self.hovered = None
 
+    # What to do with a mouse click event
     def on_click(self, event):
         if self.hovered is not None:
             self.hovered.claim(self.active_player)
@@ -143,6 +155,7 @@ class Game(object):
             self.active_player = self.active_player.next_player
             self.hovered = None
 
+    # determine if the game ended with the recently claimed field
     def is_end(self):
         winner = None
         claimed = self.hovered
@@ -163,6 +176,8 @@ class Game(object):
         self.end_game(winner)
         return True
 
+    # determine how many connected fields can be found in the selected direction.
+    # example: (1,0) will test along the x axis
     def get_occupied_streak(self, field, add_x, add_y):
         streak_active = True
         direction = 1
@@ -183,6 +198,7 @@ class Game(object):
                     streak_active = False
         return streak
 
+    # display the game over message
     def end_game(self, winner):
         self.after_win_events()
         if winner is not None:
@@ -193,11 +209,13 @@ class Game(object):
             text = 'NOBODY WINS'
         self.canvas.itemconfigure(self.canvas_text_winner_id, text=text)
 
+    # reset every field on the board
     def reset_board(self):
         for column in self.board:
             for field in column:
                 field.reset()
 
+    # reset the outline of every field (Note: not used in current version)
     def reset_soft(self):
         for column in self.board:
             for field in column:
@@ -217,35 +235,42 @@ class Field(object):
         self.inner_circle_id = None
         self.claimed_by = None
 
+    # create the gui element
     def create_gui_element(self):
         self.outer_circle_id = self.canvas.create_circle(self.x_pos, self.y_pos, self.radius, fill=Color.WHITE.value,
                                                          outline=Color.OUTLINE.value, width=2)
         self.inner_circle_id = self.canvas.create_circle(self.x_pos, self.y_pos, self.radius - 10,
                                                          fill=Color.WHITE.value)
 
+    # claim the field
     def claim(self, player: Player):
         self.canvas.itemconfigure(self.outer_circle_id, fill=player.color_outer)
         self.canvas.itemconfigure(self.inner_circle_id, fill=player.color_inner)
         self.status = FieldStatus.OCCUPIED
         self.claimed_by = player
 
+    # set the field to hover
     def hover(self, player: Player):
         self.canvas.itemconfigure(self.outer_circle_id, fill=player.color_hovered_outer)
         self.canvas.itemconfigure(self.inner_circle_id, fill=player.color_hovered_inner)
 
+    # completely reset the field
     def reset(self):
         self.canvas.itemconfigure(self.outer_circle_id, fill=Color.WHITE.value, outline=Color.OUTLINE.value, width=2)
         self.canvas.itemconfigure(self.inner_circle_id, fill=Color.WHITE.value)
         self.status = FieldStatus.FREE
         self.claimed_by = None
 
+    # set highlighting
     def outline(self):
         self.canvas.itemconfigure(self.outer_circle_id, outline=Color.HIGHLIGHT.value, width=5)
 
+    # remove highlighting
     def reset_outline(self):
         self.canvas.itemconfigure(self.outer_circle_id, outline=Color.OUTLINE.value, width=2)
 
 
+# Allows to edit the game settings
 class GameSettings(object):
     def __init__(self):
         self.columns = 7
@@ -259,8 +284,9 @@ class GameSettings(object):
         self.field_radius_entry = None
         self.space_entry = None
         self.tk = None
-        self.height = 20
+        self.height = 30
 
+    # Create the settings window with its widgets
     def create_window(self):
         self.tk = open_centered_window(310, 210, 'Settings')
 
@@ -284,6 +310,7 @@ class GameSettings(object):
 
         self.tk.mainloop()
 
+    # Button Command
     def button_click(self):
         try:
             self.columns = int(self.columns_entry.get())
@@ -296,26 +323,31 @@ class GameSettings(object):
         finally:
             self.tk.destroy()
 
+    # Place any Tkinter widget at the selected coordinates
     def place(self, widget, x, y):
-        widget.place(x=x, y=y, width=140, height=40)
+        widget.place(x=x, y=y, width=140, height=self.height)
 
+    # Create an entry field on the given position (0 or higher)
     def create_entry(self, pos, text):
         entry = Entry(master=self.tk)
         entry.insert(0, str(text))
-        self.place(entry, 160, pos*30+10)
+        self.place(entry, 160, pos*self.height+10)
         return entry
 
+    # Create a label on the given position (0 or higher)
     def create_label(self, pos, text):
         label = Label(master=self.tk, text=str(text))
-        self.place(label, 10, pos*30+10)
+        self.place(label, 10, pos*self.height+10)
         return label
 
 
+# Add a create circle method to Tkinters Canvas
 def _create_circle(self, x, y, r, **kwargs):
     return self.create_oval(x - r, y - r, x + r, y + r, **kwargs)
 Canvas.create_circle = _create_circle
 
 
+# Creates a Tkinter window and center it on the screen. Return the created window
 def open_centered_window(width, height, title):
     tk = Tk()
 
@@ -329,6 +361,8 @@ def open_centered_window(width, height, title):
     tk.title(title)
     return tk
 
+
+# Start the Settings window and wait for input - start game with default values if ValueErrors occur.
 settings = GameSettings()
 try:
     settings.create_window()
