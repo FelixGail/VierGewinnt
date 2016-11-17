@@ -342,12 +342,14 @@ class GameSettings(object):
 
 
 # Add a create circle method to Tkinters Canvas
+# Idea taken from: http://stackoverflow.com/questions/17985216/draw-circle-in-tkinter-python
 def _create_circle(self, x, y, r, **kwargs):
     return self.create_oval(x - r, y - r, x + r, y + r, **kwargs)
 Canvas.create_circle = _create_circle
 
 
 # Creates a Tkinter window and center it on the screen. Return the created window
+# Idea taken from: http://stackoverflow.com/questions/3352918/how-to-center-a-window-on-the-screen-in-tkinter
 def open_centered_window(width, height, title):
     tk = Tk()
 
@@ -363,6 +365,7 @@ def open_centered_window(width, height, title):
 
 
 # Start the Settings window and wait for input - start game with default values if ValueErrors occur.
+# Information taken from: https://docs.python.org/3/tutorial/errors.html
 settings = GameSettings()
 try:
     settings.create_window()
